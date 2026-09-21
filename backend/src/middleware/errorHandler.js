@@ -18,11 +18,19 @@ const errorHandler = (err, req, res, next) => {
     return res.status(400).json({ error: 'Invalid ID format.' });
   }
 
-  // OpenAI API errors
-  if (err.status && err.error) {
-    return res.status(err.status).json({
-      error: 'AI API Error',
-      message: err.error.message || 'Failed to communicate with AI provider.',
+  // AI provider errors (Ollama connection refused, model not found, etc.)
+  if (err.code === 'ECONNREFUSED' || err.message?.includes('ECONNREFUSED')) {
+    return res.status(503).json({
+      error: 'AI Provider Unavailable',
+      message: 'Cannot connect to Ollama. Make sure it is running: ollama serve',
+    });
+  }
+
+  // Ollama model not found
+  if (err.status === 404 || err.message?.includes('model')) {
+    return res.status(503).json({
+      error: 'Model Not Found',
+      message: `Model not available. Pull it with: ollama pull llama3.2`,
     });
   }
 

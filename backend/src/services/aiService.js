@@ -1,7 +1,13 @@
 const OpenAI = require('openai');
 
+/**
+ * Ollama exposes an OpenAI-compatible REST API at /v1.
+ * We simply point the OpenAI SDK at the local Ollama server.
+ * No real API key is required — 'ollama' is used as a placeholder.
+ */
 const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || 'sk-placeholder-replace-with-your-key',
+  baseURL: process.env.OLLAMA_BASE_URL || 'http://localhost:11434/v1',
+  apiKey: 'ollama', // Ollama does not require authentication
 });
 
 /**
@@ -57,7 +63,8 @@ const buildMessages = (tone, history, userPrompt) => {
 };
 
 /**
- * Stream a chat completion from OpenAI.
+ * Stream a chat completion from the local Ollama instance.
+ * Uses the OpenAI-compatible /v1/chat/completions endpoint.
  * Calls onToken() for each streamed token and returns the full response.
  *
  * @param {string} tone - Tone mode ('professional' | 'casual' | 'concise')
@@ -70,10 +77,11 @@ const streamChatCompletion = async (tone, history, userPrompt, onToken) => {
   const messages = buildMessages(tone, history, userPrompt);
 
   const stream = await client.chat.completions.create({
-    model: process.env.OPENAI_MODEL || 'gpt-4o',
+    model: process.env.OLLAMA_MODEL || 'llama3.2',
     messages,
     stream: true,
     temperature: tone === 'concise' ? 0.3 : 0.7,
+    // Note: Ollama ignores max_tokens for most models but we pass it for compatibility
     max_tokens: tone === 'concise' ? 500 : 1500,
   });
 
